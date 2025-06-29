@@ -1,0 +1,42 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Go PDF Generator</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        textarea {
+            width: 80vw;
+            height: 50vh;
+            margin-bottom: 20px;
+        }
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            cursor: pointer;
+            width: 50%;
+        }
+    </style>
+</head>
+<body>
+    <form action="/" method="post">
+        <textarea name="text" rows="20" cols="80"></textarea><br>
+        <input type="submit" value="Download PDF">
+    </form>
+</body>
+</html>
