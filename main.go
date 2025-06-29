@@ -48,8 +48,11 @@ func (p *MyPDF) Header() {
 		}
 	} else {
 		fmt.Printf("Image Info: Width=%f, Height=%f\n", imgInfo.Width(), imgInfo.Height())
+		// Draw the image
+		p.Image(imagePath, 0, 0, pageWidth, 0, false, "", 0, "")
+		// Set the Y position for the next content, below the image with a margin
+		p.SetY(imgInfo.Height() + 5) // 5mm margin
 	}
-	p.Image(imagePath, 0, 0, pageWidth, 0, false, "", 0, "")
 }
 
 // Footer is called automatically at the end of each new page
