@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"os"
+	"io/ioutil"
 )
 
 func TestPDFGeneration(t *testing.T) {
@@ -15,7 +17,15 @@ func TestPDFGeneration(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	// Generate the PDF
-	generatePDF(rr, inputText)
+	pdfBytes, err := generatePDF(inputText)
+	if err != nil {
+		t.Fatalf("generatePDF failed: %v", err)
+	}
+
+	// Write the PDF bytes to the ResponseRecorder
+	rr.Header().Set("Content-Type", "application/pdf")
+	rr.Header().Set("Content-Disposition", "attachment; filename=generated.pdf")
+	rr.Write(pdfBytes)
 
 	// Check the HTTP status code
 	if status := rr.Code; status != http.StatusOK {
@@ -36,4 +46,32 @@ func TestPDFGeneration(t *testing.T) {
 		t.Errorf("handler returned wrong content disposition: got %v want %v",
 			contentDisposition, expectedContentDisposition)
 	}
+}
+
+func TestGeneratePDFContent(t *testing.T) {
+	inputText := "Ich sehe, die aus der Schenke jemand abgeführt wird. Trete ein, grüße und frage was los ist. Leute im Schankraum sind etwas hangover und baff. Stimmung ist drückend."
+
+	pdfBytes, err := generatePDF(inputText)
+	if err != nil {
+		t.Fatalf("generatePDF failed: %v", err)
+	}
+
+	// Save the PDF to a temporary file for inspection
+	tmpFile, err := ioutil.TempFile("", "test_*.pdf")
+	if err != nil {
+		t.Fatalf("Failed to create temporary file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name()) // Clean up the file after the test
+
+	if _, err := tmpFile.Write(pdfBytes); err != nil {
+		t.Fatalf("Failed to write PDF to temporary file: %v", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("Failed to close temporary file: %v", err)
+	}
+
+	t.Logf("Generated PDF saved to: %s", tmpFile.Name())
+
+	// You would typically add assertions here to read and verify the PDF content.
+	// For now, you can manually inspect the generated PDF file.
 }

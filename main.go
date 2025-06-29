@@ -2,44 +2,59 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/jung-kurt/gofpdf"
+	"codeberg.org/go-pdf/fpdf"
 )
 
-func generatePDF(w http.ResponseWriter, text string) {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+func generatePDF(text string) ([]byte, error) {
+	pdf := fpdf.New("P", "mm", "A4", "")
+
+	// Add UTF-8 font
+	pdf.AddUTF8Font("NotoSans", "", "NotoSans-Regular.ttf")
+	pdf.AddUTF8Font("NotoSans", "B", "NotoSans-Bold.ttf")
+	pdf.AddUTF8Font("NotoSans", "I", "NotoSans-Italic.ttf")
+	pdf.SetFont("NotoSans", "", 12) // Set font for general use
 
 	pdf.SetHeaderFunc(func() {
-		pdf.SetFont("Arial", "B", 12)
-		pdf.Cell(0, 10, "Go PDF Generator")
+		pdf.SetFont("NotoSans", "B", 12) // Use NotoSans for header
+		pdf.Cell(0, 10, "Deregraf - The Aventurian PDF Herald")
 		pdf.Ln(15)
 	})
 
 	pdf.SetFooterFunc(func() {
 		pdf.SetY(-15)
-		pdf.SetFont("Arial", "I", 8)
-		pdf.CellFormat(0, 10, fmt.Sprintf("Page %d", pdf.PageNo()),
+		pdf.SetFont("NotoSans", "I", 8) // Use NotoSans for footer
+		pdf.CellFormat(0, 10, fmt.Sprintf("Seite %d", pdf.PageNo()),
 			"", 0, "C", false, 0, "")
 	})
 
 	pdf.AddPage()
-	pdf.SetFont("Arial", "", 12)
+	// Use MultiCell for multi-line text
 	pdf.MultiCell(190, 10, text, "", "", false)
-	w.Header().Set("Content-Type", "application/pdf")
-	w.Header().Set("Content-Disposition", "attachment; filename=generated.pdf")
-	err := pdf.Output(w)
+
+	var buf bytes.Buffer
+	err := pdf.Output(&buf)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil, err
 	}
+	return buf.Bytes(), nil
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		text := r.FormValue("text")
-		generatePDF(w, text)
+		pdfBytes, err := generatePDF(text)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/pdf")
+		w.Header().Set("Content-Disposition", "attachment; filename=generated.pdf")
+		w.Write(pdfBytes)
 	} else {
 		http.ServeFile(w, r, "index.html")
 	}

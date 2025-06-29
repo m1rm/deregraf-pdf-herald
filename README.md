@@ -8,6 +8,9 @@ This project is work in progress. Aventurian Messenger like styles are not yet a
 ## Prerequisites
 - Go
 
+## Tooling
+- Library used for PDF generation: https://codeberg.org/go-pdf/fpdf
+
 ## Setup
 - Clone the repo
 - cd into it
