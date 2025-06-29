@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -6,31 +5,71 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"codeberg.org/go-pdf/fpdf"
 )
 
+// MyPDF is a custom Fpdf type to override Header and Footer
+type MyPDF struct {
+	*fpdf.Fpdf
+}
+
+// Header is called automatically at the beginning of each new page
+func (p *MyPDF) Header() {
+	// Page dimensions
+	pageWidth, _ := p.GetPageSize()
+
+	// Header image
+	imagePath := "aventurischerBote_crappyHeader.jpg"
+	
+	// Get the current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Printf("Error getting current working directory: %v", err)
+		return
+	}
+	
+	// Construct the absolute path to the image
+	absImagePath := filepath.Join(cwd, imagePath)
+	fmt.Printf("Attempting to register image from absolute path: %s\n", absImagePath)
+
+	// Register the image and get its info
+	imgInfo := p.RegisterImage(imagePath, "JPG") // Explicitly set type to JPG
+	if imgInfo == nil {
+		fmt.Printf("Failed to register image: %s. This might be due to an invalid path or unsupported format.\n", imagePath)
+		// You can also try to get more specific error information if fpdf provides it
+		// For example, by checking if the file exists before registering
+		if _, err := os.Stat(absImagePath); os.IsNotExist(err) {
+			fmt.Printf("Error: Image file does not exist at %s\n", absImagePath)
+		} else if err != nil {
+			fmt.Printf("Error checking image file existence: %v\n", err)
+		}
+	} else {
+		fmt.Printf("Image Info: Width=%f, Height=%f\n", imgInfo.Width(), imgInfo.Height())
+	}
+	p.Image(imagePath, 0, 0, pageWidth, 0, false, "", 0, "")
+}
+
+// Footer is called automatically at the end of each new page
+func (p *MyPDF) Footer() {
+	p.SetY(-15)
+	p.SetFont("NotoSans", "I", 8) // Use NotoSans for footer
+	p.CellFormat(0, 10, fmt.Sprintf("Seite %d", p.PageNo()),
+		"", 0, "C", false, 0, "")
+}
+
 func generatePDF(text string) ([]byte, error) {
-	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf := MyPDF{fpdf.New("P", "mm", "A4", "")}
+	pdf.SetHeaderFunc(pdf.Header)
+	pdf.SetFooterFunc(pdf.Footer)
 
 	// Add UTF-8 font
 	pdf.AddUTF8Font("NotoSans", "", "NotoSans-Regular.ttf")
 	pdf.AddUTF8Font("NotoSans", "B", "NotoSans-Bold.ttf")
 	pdf.AddUTF8Font("NotoSans", "I", "NotoSans-Italic.ttf")
 	pdf.SetFont("NotoSans", "", 12) // Set font for general use
-
-	pdf.SetHeaderFunc(func() {
-		pdf.SetFont("NotoSans", "B", 12) // Use NotoSans for header
-		pdf.Cell(0, 10, "Deregraf - The Aventurian PDF Herald")
-		pdf.Ln(15)
-	})
-
-	pdf.SetFooterFunc(func() {
-		pdf.SetY(-15)
-		pdf.SetFont("NotoSans", "I", 8) // Use NotoSans for footer
-		pdf.CellFormat(0, 10, fmt.Sprintf("Seite %d", pdf.PageNo()),
-			"", 0, "C", false, 0, "")
-	})
 
 	pdf.AddPage()
 	// Use MultiCell for multi-line text
