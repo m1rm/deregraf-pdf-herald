@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -88,7 +89,7 @@ func generatePDF(text string) ([]byte, error) {
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		text := r.FormValue("text")
+		text := template.HTMLEscapeString(r.FormValue("text"))
 		pdfBytes, err := generatePDF(text)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
