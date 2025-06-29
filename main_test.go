@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 	"os"
-	"io/ioutil"
 )
 
 func TestPDFGeneration(t *testing.T) {
@@ -56,22 +55,21 @@ func TestGeneratePDFContent(t *testing.T) {
 		t.Fatalf("generatePDF failed: %v", err)
 	}
 
-	// Save the PDF to a temporary file for inspection
-	tmpFile, err := ioutil.TempFile("", "test_*.pdf")
+	// Save the PDF to a file for inspection
+	outputFilePath := "test_generated.pdf"
+	outFile, err := os.Create(outputFilePath)
 	if err != nil {
-		t.Fatalf("Failed to create temporary file: %v", err)
+		t.Fatalf("Failed to create output file %s: %v", outputFilePath, err)
 	}
-	defer os.Remove(tmpFile.Name()) // Clean up the file after the test
+	defer outFile.Close() // Ensure the file is closed
 
-	if _, err := tmpFile.Write(pdfBytes); err != nil {
-		t.Fatalf("Failed to write PDF to temporary file: %v", err)
-	}
-	if err := tmpFile.Close(); err != nil {
-		t.Fatalf("Failed to close temporary file: %v", err)
+	if _, err := outFile.Write(pdfBytes); err != nil {
+		t.Fatalf("Failed to write PDF to file %s: %v", outputFilePath, err)
 	}
 
-	t.Logf("Generated PDF saved to: %s", tmpFile.Name())
+	t.Logf("Generated PDF saved to: %s", outputFilePath)
 
-	// You would typically add assertions here to read and verify the PDF content.
-	// For now, you can manually inspect the generated PDF file.
+	// IMPORTANT: Manually inspect this PDF file to verify that the header image is present
+	// and that the text content starts below it, without overflowing.
+	// This test primarily ensures PDF generation and provides a file for visual inspection.
 }
